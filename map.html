@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Custom Markers</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/9.8.0/css/bootstrap-slider.min.css">
+    <link href="https://cdn.datatables.net/1.10.15/css/jquery.dataTables.min.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js"></script>
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 500px;
+        width: 100%;
+        fillOpacity: .3
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">Interactive Visualization of Similarities</a>
+    </div>
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <ul class="nav navbar-nav navbar-right">
+        <li class=""><a href="index.html">Map</a></li>
+        <li class=""><a href="index2.html">Keywords Strength Map</a></li>
+        <li class=""><a href="asa.html">ASA keywords</a></li>
+        <li class=""><a href="asa2.html">ASA keywords by year</a></li>
+        <li class="active"><a href="#">USA Map</a></li>        
+      </ul>
+    </div>
+  </div>
+</nav>
+<div class="container">
+      <div class="row">
+        <div class="col-xs-12 col-md-8" style="text-align:center;">
+          <h2 id="yearTag"></h2>
+          <a class="btn btn-primary"  onclick="prev();" data-toggle="button">
+            <span class="glyphicon glyphicon-backward" aria-hidden="true" ></span>
+          </a>
+          <a class="btn btn-primary"  data-toggle="button" onclick="play=false; $('#pause').hide(); $('#play').show();" id="pause">
+            <span class="glyphicon glyphicon-pause" aria-hidden="true"></span>
+          </a>
+          <a class="btn btn-primary"  data-toggle="button" style="display:none;" id="play" onclick="play=true; $('#pause').show(); $('#play').hide();" >
+            <span class="glyphicon glyphicon-play" aria-hidden="true" ></span>
+          </a>
+          <a class="btn btn-primary"  onclick="next();" data-toggle="button">
+            <span class="glyphicon glyphicon-forward" aria-hidden="true" ></span>
+          </a>
+    <div id="map"></div>
+  </div>
+        <div class="col-xs-12 col-md-4">
+          <div style="height:600px; overflow: auto">
+    <table id="example" class="table table-striped table-bordered" style="cursor:pointer;" cellspacing="0">
+      <thead>
+        <tr>
+            <th>Institution</th>
+            <th>Citation</th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+
+    </table>
+    </div>
+</div></div>
+    <div style="position: absolute; bottom: 10px; right: 0px; margin: 20px;">
+      Developed by: Mohammad Ali Alamdar Yazdi
+    </div>
+</div>
+<script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCQNu6Ap2aAoLRirZMj_5LkqpxQ0_pBjnQ">
+    </script>
+    <script type="text/javascript" src="varx.js"></script>
+    <script>
+
+
+      var map;
+
+
+  map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 4,
+          center: new google.maps.LatLng(40, -100),
+          mapTypeId: 'roadmap'
+        });
+
+function getCircle(magnitude) {
+        return {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: 'red',
+          fillOpacity: .3,
+          scale: Math.round(Math.pow(magnitude,.5)/2,0),
+          strokeColor: 'black',
+          strokeWeight: 1
+        };
+}
+play=true;
+
+var ii=1991
+function myLoop () {           //  create a loop function
+   setTimeout(function () {    //  call a 3s setTimeout when the loop is called          //  your code here
+      if(play){
+        ii++;
+        if (ii > 2016) {
+            ii=1991;           //  if the counter < 10, call the loop function           //  ..  again which will trigger another 
+        }
+        showOnMap(ii);
+      }
+      myLoop();                        //  ..  setTimeout()
+   }, 5000)
+}
+
+function prev(){
+  ii--;
+  if (ii<1991){
+    ii=2016;
+  }
+  play=false;  
+  $('#pause').hide(); 
+  $('#play').show();
+
+  showOnMap(ii);
+}
+
+
+function next(){
+  ii++;
+  if (ii>2016){
+    ii=1991;
+  }  
+  play=false;
+  $('#pause').hide(); 
+  $('#play').show();
+
+  showOnMap(ii);
+}
+
+var markers= [];
+
+function showOnMap(year) {
+        $("#yearTag").html(year);
+        var table = document.getElementById("example").getElementsByTagName('tbody')[0];
+        $("#example tbody tr").remove(); 
+
+        hideMarkers();
+        var y=[];
+        for (i=0;i<x.length;i++){
+             if(x[i][0]==year && x[i][5]!=0){
+              y.push(x[i])
+            }
+        }
+        var features=[];
+        for (i=0;i<y.length;i++){
+          features.push({
+            position: new google.maps.LatLng(y[i][3], y[i][4]),
+            type: 'info',
+            size: y[i][5],
+            year: y[i][0],
+            info: y[i][1]
+          });
+          
+          var row = table.insertRow(i);      
+          var cell1 = row.insertCell(0);
+          cell1.innerHTML = y[i][1];
+          var cell2 = row.insertCell(1);
+          cell2.innerHTML = y[i][5];
+        }
+
+        // Create markers.
+        features.forEach(function(feature) {
+          var marker = new google.maps.Marker({
+            position: feature.position,
+            icon: getCircle(feature.size),
+            title:feature.info,
+            map: map
+          });
+          markers.push(marker);
+
+
+$('#example tbody').find('tr').click( function(){
+  var row = $(this).index();
+  console.log(row);
+ if (markers[row].getAnimation() !== null) {
+          markers[row].setAnimation(null);
+        } else {
+          markers[row].setAnimation(google.maps.Animation.BOUNCE);
+        }
+});
+
+
+        });
+}
+
+function hideMarkers() {
+        /* Remove All Markers */
+        while(markers.length){
+            markers.pop().setMap(null);
+        }
+    }
+
+function toggleBounce() {
+  if (marker.getAnimation() !== null) {
+    marker.setAnimation(null);
+  } else {
+    marker.setAnimation(google.maps.Animation.BOUNCE);
+  }
+}
+
+
+
+  showOnMap(1991);
+
+myLoop(); 
+
+    </script>
+    
+  </body>
+</html>
